@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  queries:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: gis
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load schema and sample data
+        run: psql -v ON_ERROR_STOP=1 -f sql/01_schema.sql -f sql/02_sample_data.sql
+      - name: Run query tests
+        run: ./scripts/run_tests.sh
+      - name: CHEATSHEET.md is up to date
+        run: |
+          python3 scripts/build_cheatsheet.py
+          git diff --exit-code CHEATSHEET.md README.md
