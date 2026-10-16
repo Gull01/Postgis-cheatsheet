@@ -70,7 +70,7 @@ Synthetic, in EPSG:4326, centred on an Islamabad-style sector grid. It is for pr
 
 ## Things worth knowing
 
-- **geometry vs geography.** Data is stored as `geometry(…, 4326)`. For metres, cast: `geom::geography`. Areas and lengths computed directly on 4326 geometry are in degrees.
+- **geometry vs geography.** Data is stored as `geometry(â€¦, 4326)`. For metres, cast: `geom::geography`. Areas and lengths computed directly on 4326 geometry are in degrees.
 - **Use `ST_DWithin`, not `ST_Distance(...) < x`.** Only `ST_DWithin` can use a spatial index.
 - **Clustering needs metres.** DBSCAN and K-means queries project to EPSG:32643 (UTM zone 43N, which covers Islamabad) first. Pick the UTM zone for your own area.
 - **Indexes.** `sql/01_schema.sql` creates GiST indexes on each geometry column, plus functional indexes on `(geom::geography)` so geography-cast queries can use an index.

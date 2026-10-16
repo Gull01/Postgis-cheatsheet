@@ -37,7 +37,7 @@ for c in cats:
         md += [f'<a id="q{q["num"]:02d}"></a>', f"### {q['num']}. {q['title']}", "",
                f"`{q['functions']}`  ·  returns **{q['expect_rows']}** rows  ·  [`queries/{q['file']}`](queries/{q['file']})", "",
                "```sql", q["sql"], "```", "", f"> {q['note']}", ""]
-(root / "CHEATSHEET.md").write_text("\n".join(md))
+(root / "CHEATSHEET.md").write_text("\n".join(md), encoding="utf-8", newline="\n")
 
 # ---- README query table ------------------------------------------------------
 rows = ["| # | Query | Key functions |", "|---|-------|---------------|"]
@@ -49,5 +49,5 @@ if readme.exists():
     text = readme.read_text()
     new = re.sub(r"<!-- QUERIES:START -->.*?<!-- QUERIES:END -->",
                  lambda m: "<!-- QUERIES:START -->\n" + table + "\n<!-- QUERIES:END -->", text, flags=re.S)
-    readme.write_text(new)
+    readme.write_text(new, encoding="utf-8", newline="\n")
 print(f"Built CHEATSHEET.md with {len(queries)} queries")
