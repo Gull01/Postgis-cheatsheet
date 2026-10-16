@@ -4,7 +4,7 @@
 ![PostGIS 3.4](https://img.shields.io/badge/PostGIS-3.4-336791)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
-20 spatial SQL queries you can copy, run and adapt: measurement, buffers, spatial joins, KNN, clustering, Voronoi and dissolve. Every query runs against a small sample dataset, and a test runner checks each one returns the expected number of rows (also run in CI).
+20 spatial SQL queries you can copy, run and adapt: measurement, buffers, spatial joins, KNN, clustering, Voronoi and dissolve. Every query runs against a small synthetic dataset modelled on an Islamabad-style sector grid. A test runner executes every query and checks its expected row count in GitHub Actions.
 
 **Browse the queries with SQL inline: [CHEATSHEET.md](CHEATSHEET.md)**
 
@@ -15,9 +15,31 @@ git clone https://github.com/Gull01/Postgis-cheatsheet.git
 cd postgis-cheatsheet
 
 make up      # PostGIS in Docker, schema + sample data loaded automatically
+make demo    # run a guided demonstration with representative results
 make test    # runs all 20 queries and checks row counts
 make psql    # open a shell and try them yourself
 ```
+
+### Demo
+
+The guided demo in [`scripts/demo.sql`](scripts/demo.sql) shows the project end to end:
+
+1. Counts the sample sectors, facilities and roads.
+2. Finds the five hospitals nearest to a point using a spatial KNN order.
+3. Summarizes facilities by type.
+4. Counts facilities inside each sector.
+5. Summarizes DBSCAN clusters in metres after projecting to UTM.
+
+With Docker Compose:
+
+```bash
+docker compose up -d --wait
+docker compose exec -T db psql -U postgres -d gis -v ON_ERROR_STOP=1 -f - < scripts/demo.sql
+```
+
+On Windows PowerShell, use the same command from the repository directory. If `make` is unavailable, use the `docker compose` commands directly. The database is exposed on host port `5433`, while commands executed inside the `db` container use PostgreSQL's internal port.
+
+The demo uses synthetic data for learning and does not represent official Islamabad boundaries or real facilities.
 
 No Docker? Use any PostgreSQL 13+ with PostGIS 3.1+ (query 20 needs `ST_HexagonGrid`):
 
@@ -70,7 +92,7 @@ Synthetic, in EPSG:4326, centred on an Islamabad-style sector grid. It is for pr
 
 ## Things worth knowing
 
-- **geometry vs geography.** Data is stored as `geometry(â€¦, 4326)`. For metres, cast: `geom::geography`. Areas and lengths computed directly on 4326 geometry are in degrees.
+- **geometry vs geography.** Data is stored as `geometry(..., 4326)`. For metres, cast: `geom::geography`. Areas and lengths computed directly on 4326 geometry are in degrees.
 - **Use `ST_DWithin`, not `ST_Distance(...) < x`.** Only `ST_DWithin` can use a spatial index.
 - **Clustering needs metres.** DBSCAN and K-means queries project to EPSG:32643 (UTM zone 43N, which covers Islamabad) first. Pick the UTM zone for your own area.
 - **Indexes.** `sql/01_schema.sql` creates GiST indexes on each geometry column, plus functional indexes on `(geom::geography)` so geography-cast queries can use an index.

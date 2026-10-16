@@ -1,4 +1,4 @@
-.PHONY: up down psql test cheatsheet data
+.PHONY: up down psql test demo cheatsheet data
 
 up:          ## start PostGIS and load the sample data
 	docker compose up -d --wait
@@ -11,6 +11,9 @@ psql:        ## open a psql shell
 
 test:        ## run all 20 queries and check row counts
 	./scripts/run_tests.sh
+
+demo: up    ## run a guided demonstration against the sample database
+	docker compose exec -T db psql -U postgres -d gis -v ON_ERROR_STOP=1 -f - < scripts/demo.sql
 
 cheatsheet:  ## rebuild CHEATSHEET.md and the README query table
 	python3 scripts/build_cheatsheet.py
