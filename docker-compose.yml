@@ -1,17 +1,50 @@
 services:
   db:
     image: postgis/postgis:16-3.4
-    container_name: postgis-cheatsheet
+    container_name: postgis-cheatsheet-db
     environment:
       POSTGRES_DB: gis
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"          # 5433 on the host so it does not clash with a local Postgres
+      - "5433:5432"          # 5433 on the host so it does not clash with local Postgres
     volumes:
       - ./sql:/docker-entrypoint-initdb.d:ro   # 01_schema.sql, then 02_sample_data.sql
+      - postgis_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d gis"]
       interval: 3s
       timeout: 3s
       retries: 20
+
+  # Crunchy Data Vector Tile Server:
+  # Serves fast vector tiles directly from spatial tables and functions.
+  # Includes interactive web map preview at http://localhost:7800/
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    container_name: postgis-cheatsheet-tileserv
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/gis
+    ports:
+      - "7800:7800"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # pgAdmin 4:
+  # Browser-based database administration with built-in geometry viewer at http://localhost:5050/
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: postgis-cheatsheet-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gis.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgis_data:

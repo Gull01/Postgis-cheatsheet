@@ -3,7 +3,7 @@
 
 \echo ''
 \echo '=== PostGIS cheat sheet demo ==='
-\echo 'Synthetic Islamabad-style data: 20 sectors, 60 facilities, 10 roads'
+\echo 'Synthetic Islamabad-style data: 20 sectors, 60 facilities, 10 roads, 3 vehicles, 48 GPS pings'
 
 \echo ''
 \echo '--- 1. Dataset summary ---'
@@ -12,6 +12,10 @@ UNION ALL
 SELECT 'facilities', count(*) FROM facilities
 UNION ALL
 SELECT 'roads', count(*) FROM roads
+UNION ALL
+SELECT 'vehicles', count(*) FROM vehicles
+UNION ALL
+SELECT 'gps_pings', count(*) FROM gps_pings
 ORDER BY table_name;
 
 \echo ''
@@ -54,4 +58,15 @@ GROUP BY cluster_id
 ORDER BY cluster_id NULLS LAST;
 
 \echo ''
-\echo 'Demo complete. Browse all 20 queries in CHEATSHEET.md.'
+\echo '--- 6. Vehicle trajectory reconstruction & total distance ---'
+SELECT v.name AS vehicle,
+       v.vehicle_type,
+       count(p.id) AS pings,
+       round((ST_Length(ST_MakeLine(p.geom ORDER BY p.recorded_at)::geography) / 1000)::numeric, 2) AS total_km
+FROM vehicles v
+JOIN gps_pings p ON v.id = p.vehicle_id
+GROUP BY v.id, v.name, v.vehicle_type
+ORDER BY v.id;
+
+\echo ''
+\echo 'Demo complete. Browse all 25 queries in CHEATSHEET.md.'
