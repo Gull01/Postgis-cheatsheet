@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+DATABASE_URL = os.environ.get("DATABASE_URL")
 PGHOST = os.environ.get("PGHOST", "localhost")
 PGPORT = os.environ.get("PGPORT", "5433")
 PGUSER = os.environ.get("PGUSER", "postgres")
@@ -21,23 +22,44 @@ PGPASSWORD = os.environ.get("PGPASSWORD", "postgres")
 PGDATABASE = os.environ.get("PGDATABASE", "gis")
 
 
+def find_psql() -> str | None:
+    p = shutil.which("psql")
+    if p:
+        return p
+    # Search common Windows PostgreSQL paths
+    for cand in sorted(Path(r"C:\Program Files\PostgreSQL").glob("*/bin/psql.exe"), reverse=True):
+        if cand.exists():
+            return str(cand)
+    return None
+
+
 def execute_sql_count(sql_body: str) -> str:
     count_query = f"SELECT count(*) FROM ({sql_body}) q;"
-    has_psql = shutil.which("psql") is not None
+    psql_bin = find_psql()
 
-    if has_psql:
+    if psql_bin:
         env = os.environ.copy()
-        env["PGPASSWORD"] = PGPASSWORD
-        cmd = [
-            "psql",
-            "-h", PGHOST,
-            "-p", PGPORT,
-            "-U", PGUSER,
-            "-d", PGDATABASE,
-            "-X", "-At",
-            "-v", "ON_ERROR_STOP=1",
-            "-c", count_query,
-        ]
+        if PGPASSWORD:
+            env["PGPASSWORD"] = PGPASSWORD
+        if DATABASE_URL:
+            cmd = [
+                psql_bin,
+                "-d", DATABASE_URL,
+                "-X", "-At",
+                "-v", "ON_ERROR_STOP=1",
+                "-c", count_query,
+            ]
+        else:
+            cmd = [
+                psql_bin,
+                "-h", PGHOST,
+                "-p", PGPORT,
+                "-U", PGUSER,
+                "-d", PGDATABASE,
+                "-X", "-At",
+                "-v", "ON_ERROR_STOP=1",
+                "-c", count_query,
+            ]
         res = subprocess.run(cmd, env=env, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(res.stderr.strip() or res.stdout.strip())
